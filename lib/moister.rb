@@ -1,6 +1,8 @@
 require_relative 'moister/version'
 
 module Moister
+  ParseResults = Struct.new :command, :positionals, :config
+
   class OptionParserExtra < OptionParser
     def initialize(config = {})
       @config = config
@@ -56,7 +58,7 @@ module Moister
       apply_for_all self
       order! args
       if args.empty?
-        { cmd: nil, positionals: [], config: @config }
+        ParseResults.new(nil, [], @config)
       else
         cmd = args.first
         subcmd_meta = @subcommands[cmd]
@@ -70,7 +72,7 @@ module Moister
           parse_cmdline.call(subop) if parse_cmdline
         end.order! args
 
-        { cmd: cmd, positionals: positionals, config: @config }
+        ParseResults.new(cmd, positionals, @config)
       end
     end
 

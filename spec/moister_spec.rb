@@ -22,14 +22,14 @@ describe Moister do
       op.on '-o stuff', 'opt'
     end.parse ['-o', 'val' ]
 
-    expect(parsed).to include(cmd: nil, positionals: [], config: { 'opt' => 'val' })
+    expect(parsed).to have_attributes(command: nil, positionals: [], config: { 'opt' => 'val' })
   end
 
   it 'supports subcommand with option set via #on shortcut' do
     parsed = make_subc_parser.parse ['-o', 'val', 'subc', '-s', 'subval', 'positional']
 
-    expect(parsed).to include(
-      cmd: 'subc',
+    expect(parsed).to have_attributes(
+      command: 'subc',
       positionals: ['positional'],
       config: { 'opt' => 'val', 'subopt' => 'subval' }
     )
