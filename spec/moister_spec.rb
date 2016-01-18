@@ -31,7 +31,7 @@ describe Moister do
     expect(parsed).to have_attributes(
       command: 'subc',
       positionals: ['positional'],
-      config: { 'opt' => 'val', 'subopt' => 'subval' }
+      config: { 'opt' => 'val', 'subc' => { 'subopt' => 'subval' } }
     )
   end
 

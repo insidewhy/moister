@@ -65,7 +65,8 @@ module Moister
         raise "invalid subcommand: #{cmd}" unless @subcommands.has_key? cmd
         args.shift
 
-        positionals = OptionParserExtra.new(@config) do |subop|
+        @config[cmd] = {}
+        positionals = OptionParserExtra.new(@config[cmd]) do |subop|
           apply_for_all subop
           subop.banner = subcmd_meta[:banner]
           parse_cmdline = subcmd_meta[:parse_cmdline]
