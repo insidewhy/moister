@@ -35,6 +35,14 @@ describe Moister do
     )
   end
 
+  it 'supports subcommand aliases' do
+    parsed = Moister::SubcommandOptionParser.new do |op|
+      op.subcommand 'subc,s', 'subc description'
+    end.parse ['s']
+
+    expect(parsed).to have_attributes(command: 'subc')
+  end
+
   it 'generates help string including subcommand' do
     help_str = make_subc_parser.to_s
     expect(help_str).to eq("blah\n    -o stuff                         global opt\n\ncommands:\n    subc    subc description\n")

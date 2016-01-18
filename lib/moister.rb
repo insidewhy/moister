@@ -28,11 +28,14 @@ module Moister
       # options applicable to all subcommands
       @for_all = []
       @subcommands = {}
+      @aliases = {}
       super
     end
 
     def subcommand name, banner, &block
+      name, *aliases = name.split(',')
       @subcommands[name] = { name: name, banner: banner, parse_cmdline: block }
+      aliases.each { |_alias| @aliases[_alias] = name }
     end
 
     # add a block to configure every subcommand
@@ -61,6 +64,8 @@ module Moister
         ParseResults.new(nil, [], @config)
       else
         cmd = args.first
+        _alias = @aliases[cmd]
+        cmd = _alias if _alias
         subcmd_meta = @subcommands[cmd]
         raise "invalid subcommand: #{cmd}" unless @subcommands.has_key? cmd
         args.shift
