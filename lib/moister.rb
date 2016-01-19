@@ -33,8 +33,11 @@ module Moister
     end
 
     def subcommand name, banner, &block
+      name, *positionals = name.split ' '
       name, *aliases = name.split(',')
-      @subcommands[name] = { name: name, banner: banner, parse_cmdline: block }
+      subcmd = { name: name, banner: banner, parse_cmdline: block }
+      subcmd[:positionals] = positionals unless positionals.empty?
+      @subcommands[name] = subcmd
       aliases.each { |_alias| @aliases[_alias] = name }
     end
 
@@ -45,10 +48,16 @@ module Moister
 
     def to_s
       ret = super
-      max_len = @subcommands.values.map { |subcmd| subcmd[:name].length }.max
-      ret += "\ncommands:\n"
-      @subcommands.values.each do |subcmd|
+      prefixes = @subcommands.values.map do |subcmd|
         prefix = subcmd[:name]
+        prefix +=  ' ' + subcmd[:positionals].join(' ') if subcmd.has_key? :positionals
+        prefix
+      end
+      max_len = prefixes.map(&:length).max
+
+      ret += "\ncommands:\n"
+      @subcommands.values.each_with_index do |subcmd, idx|
+        prefix = prefixes[idx]
         prefix += ' ' * (max_len - prefix.length + 2)
         ret += "    #{prefix}  #{subcmd[:banner]}\n"
       end
@@ -70,13 +79,49 @@ module Moister
         raise "invalid subcommand: #{cmd}" unless @subcommands.has_key? cmd
         args.shift
 
-        @config[cmd] = {}
+        subcmd_config = @config[cmd] = {}
         positionals = OptionParserExtra.new(@config[cmd]) do |subop|
           apply_for_all subop
           subop.banner = subcmd_meta[:banner]
           parse_cmdline = subcmd_meta[:parse_cmdline]
           parse_cmdline.call(subop) if parse_cmdline
         end.order! args
+
+        positionals_meta = subcmd_meta[:positionals]
+        if positionals_meta
+          positionals_meta.each do |positional_meta|
+            array_match = false
+            optional = if positional_meta =~ /^\[.+\]$/
+              optional = true
+              positional_meta = positional_meta[1..-2]
+            end
+
+            positional_name = if positional_meta =~ /^\*[a-z\-]+$/
+              array_match = true
+              positional_meta[1..-1]
+            else
+              positional_meta
+            end
+
+            if array_match
+              if positionals.empty?
+                if optional
+                  subcmd_config[positional_name] = []
+                  next
+                end
+                raise "`#{cmd}' subcommand requires at least one `#{positional_name}' parameter"
+              end
+              subcmd_config[positional_name] = positionals
+              positionals = []
+            else
+              if positionals.empty?
+                next if optional
+                raise "`#{cmd}' subcommand requires `#{positional_name}' parameter"
+              end
+              subcmd_config[positional_name] = positionals.shift
+            end
+          end
+        end
 
         ParseResults.new(cmd, positionals, @config)
       end

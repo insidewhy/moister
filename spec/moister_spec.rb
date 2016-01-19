@@ -43,6 +43,36 @@ describe Moister do
     expect(parsed).to have_attributes(command: 'subc')
   end
 
+  it 'supports subcommand positional' do
+    parsed = Moister::SubcommandOptionParser.new do |op|
+      op.subcommand 'subc param', 'subc description'
+    end.parse ['subc', 'paramvalue']
+    expect(parsed).to have_attributes(config: { 'subc' => { 'param' => 'paramvalue' } })
+  end
+
+  it 'supports subcommand optional positional' do
+    parser = Moister::SubcommandOptionParser.new do |op|
+      op.subcommand 'subc [param]', 'subc description'
+    end
+    expect(parser.parse ['subc', 'paramvalue']).to have_attributes(config: { 'subc' => { 'param' => 'paramvalue' } })
+    expect(parser.parse ['subc']).to have_attributes(config: { 'subc' => {} })
+  end
+
+  it 'supports subcommand repeated positional' do
+    parsed = Moister::SubcommandOptionParser.new do |op|
+      op.subcommand 'subc *params', 'subc description'
+    end.parse ['subc', 'param1', 'param2']
+    expect(parsed).to have_attributes(config: { 'subc' => { 'params' => ['param1', 'param2'] } })
+  end
+
+  it 'supports subcommand optional repeated positional' do
+    parser = Moister::SubcommandOptionParser.new do |op|
+      op.subcommand 'subc [*params]', 'subc description'
+    end
+    expect(parser.parse ['subc', 'p1', 'p2']).to have_attributes(config: { 'subc' => { 'params' => ['p1', 'p2'] } })
+    expect(parser.parse ['subc']).to have_attributes(config: { 'subc' => { 'params' => [] } })
+  end
+
   it 'generates help string including subcommand' do
     help_str = make_subc_parser.to_s
     expect(help_str).to eq("blah\n    -o stuff                         global opt\n\ncommands:\n    subc    subc description\n")
